@@ -11,8 +11,8 @@ namespace SC2Sharp
 
         // Settings for single player mode.
         private static string mapName = @"TritonLE.SC2Map";
-        private static Race opponentRace = Race.Zerg;
-        private static Difficulty opponentDifficulty = Difficulty.VeryHard;
+        private static Race opponentRace = Race.Random;
+        private static Difficulty opponentDifficulty = Difficulty.CheatInsane;
 
         /* The main entry point for the bot.
          * This will start the Stacraft 2 instance and connect to it.
