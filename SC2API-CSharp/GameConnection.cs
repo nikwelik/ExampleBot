@@ -99,6 +99,7 @@ namespace SC2API_CSharp
             joinGame.Options = new InterfaceOptions();
             joinGame.Options.Raw = true;
             joinGame.Options.Score = true;
+            joinGame.PlayerName = "nikwelik's Bot";
 
             Request request = new Request();
             request.JoinGame = joinGame;

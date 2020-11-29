@@ -11,6 +11,8 @@ namespace SC2Sharp
         private bool messageGLHFSent;
         private ulong BuildingProbe;
 
+        public bool MainIsKilled;
+
         private Unit MainPylon = null;
 
         public int GateWayCount = 0;
@@ -18,7 +20,6 @@ namespace SC2Sharp
         public int PylonCount = 0;
         
         
-        //public Unit mainSCV;
 
         public Stopwatch GameTime { get; set; }
         public void OnStart(ResponseGameInfo gameInfo, ResponseData data, ResponsePing pingResponse, ResponseObservation observation, uint playerId, string opponentID)
@@ -32,13 +33,6 @@ namespace SC2Sharp
 
             SendChat(actions);
 
-            //BuildSCVS(observation, actions);
-
-            //BuildSupplyDEPOT(observation, actions);
-
-            //BuildBarracks(observation, actions);
-
-            //BuildMarines(observation, actions);
             if (MainPylon == null)
                 MoveToProxyLocation(observation, actions);
 
@@ -71,129 +65,6 @@ namespace SC2Sharp
                 messageGLHFSent = true;
             }
         }
-        /*
-        public void BuildSCVS(ResponseObservation observation, List<Action> actions) 
-        {
-            var SCVS = observation.Observation.RawData.Units.Where(d => d.UnitType == UnitTypes.SCV && d.Alliance == Alliance.Self);
-
-            var CommandCenter = observation.Observation.RawData.Units.Where(d => d.UnitType == UnitTypes.COMMAND_CENTER && d.Alliance == Alliance.Self).FirstOrDefault();
-
-            if (observation.Observation.PlayerCommon.Minerals >= 50 && SCVS.Count() < 50 && CommandCenter.Orders.Count() < 1)
-            {
-                var command = new ActionRawUnitCommand
-                {
-                    AbilityId = 524 //SCV build ability 
-                };
-
-                command.UnitTags.Add(CommandCenter.Tag);
-                command.QueueCommand = true;
-
-                actions.Add(new Action { ActionRaw = new ActionRaw { UnitCommand = command } });
-            }
-        }
-        public void BuildSupplyDEPOT(ResponseObservation observation, List<Action> actions)
-        {
-            var SCVS = observation.Observation.RawData.Units.Where(d => d.UnitType == UnitTypes.SCV && d.Alliance == Alliance.Self).ToList();
-
-            var SCV = MainSCV(SCVS);
-
-            var CommandCenter = observation.Observation.RawData.Units.Where(d => d.UnitType == UnitTypes.COMMAND_CENTER && d.Alliance == Alliance.Self).FirstOrDefault();
-
-            if (observation.Observation.PlayerCommon.Minerals >= 100)
-            {
-                if (WeAreTop(observation))
-                {
-                    var command = new ActionRawUnitCommand
-                    {
-                        AbilityId = 319, //build supply depot
-                        TargetWorldSpacePos = new Point2D { X = CommandCenter.Pos.X+3, Y = CommandCenter.Pos.Y - 3 },
-                        QueueCommand = true
-                    };
-
-                    command.UnitTags.Add(MainSCV(SCVS).Tag);
-
-
-                    actions.Add(new Action { ActionRaw = new ActionRaw { UnitCommand = command } });
-                }
-                else
-                {
-                    var command = new ActionRawUnitCommand
-                    {
-                        AbilityId = 319, //Build supply depot
-                        TargetWorldSpacePos = new Point2D { X = CommandCenter.Pos.X+3, Y = CommandCenter.Pos.Y + 4 },
-                        QueueCommand = true
-                    };
-
-                    command.UnitTags.Add(MainSCV(SCVS).Tag);
-
-
-                    actions.Add(new Action { ActionRaw = new ActionRaw { UnitCommand = command } });
-                }
-            }
-        }
-        public void BuildBarracks(ResponseObservation observation, List<Action> actions)
-        {
-            var SCVS = observation.Observation.RawData.Units.Where(d => d.UnitType == UnitTypes.SCV && d.Alliance == Alliance.Self).ToList();
-
-            var SCV = MainSCV(SCVS);
-
-            var depot = observation.Observation.RawData.Units.Where(d => d.UnitType == UnitTypes.SUPPLY_DEPOT && d.Alliance == Alliance.Self).FirstOrDefault();
-
-            if (observation.Observation.PlayerCommon.Minerals >= 150)
-            {
-                if (WeAreTop(observation))
-                {
-                    var command = new ActionRawUnitCommand
-                    {
-                        AbilityId = 321, //build barracks
-                        TargetWorldSpacePos = new Point2D { X = depot.Pos.X + 3, Y = depot.Pos.Y+3},
-                        QueueCommand = true
-                    };
-
-                    command.UnitTags.Add(MainSCV(SCVS).Tag);
-
-
-                    actions.Add(new Action { ActionRaw = new ActionRaw { UnitCommand = command } });
-                }
-            }
-        }
-        public void BuildMarines(ResponseObservation observation, List<Action> actions)
-        {
-
-            var barracks = observation.Observation.RawData.Units.Where(d => d.UnitType == UnitTypes.BARRACKS && d.Alliance == Alliance.Self).ToList();
-            if (barracks.Count() == 0)
-            {
-                return;
-            }
-            foreach (var barrack in barracks)
-            {
-                if (observation.Observation.PlayerCommon.Minerals >= 50 && barrack.Orders.Count() < 1)
-                {
-                    var command = new ActionRawUnitCommand
-                    {
-                        AbilityId = 560 // build marine 
-                    };
-                    command.UnitTags.Add(barrack.Tag);
-                    command.QueueCommand = true;
-
-                    actions.Add(new Action { ActionRaw = new ActionRaw { UnitCommand = command } });
-                }
-            }
-        }
-        public Unit MainSCV(List<Unit> SCVS)
-        {
-            if (mainSCV != null)
-            {
-                return mainSCV;
-            }
-            var SCV = SCVS.FirstOrDefault();
-
-            mainSCV = SCV;
-
-            return mainSCV;
-        }
-         */
-
         public void MoveToProxyLocation(ResponseObservation observation, List<Action> actions) 
         {
             var nexus = observation.Observation.RawData.Units.Where(d => d.UnitType == UnitTypes.NEXUS && d.Alliance == Alliance.Self).FirstOrDefault();
@@ -272,9 +143,19 @@ namespace SC2Sharp
         }
         public void AttackZealots(ResponseObservation observation, List<Action> actions)
         {
+            if (MainIsKilled)
+            {
+                AttackProxy(observation, actions);
+                return;
+            }
             var nexus = observation.Observation.RawData.Units.Where(d => d.UnitType == UnitTypes.NEXUS && d.Alliance == Alliance.Self).FirstOrDefault();
 
             var zealots = observation.Observation.RawData.Units.Where(d => d.UnitType == UnitTypes.ZEALOT && d.Alliance == Alliance.Self);
+
+            if (zealots.Count() > 20)
+            {
+                MainIsKilled = true;
+            }
 
             var EnemyPositionX = 160.5f;
             var EnemyPositionY = 46.5f;
@@ -290,10 +171,36 @@ namespace SC2Sharp
 
             foreach (var zealot in zealots)
             {
+                
                 var command = new ActionRawUnitCommand
                 {
                     AbilityId = 23, //attack,
                     TargetWorldSpacePos = new Point2D { X = EnemyPositionX, Y = EnemyPositionY },
+                };
+
+                command.UnitTags.Add(zealot.Tag);
+                command.QueueCommand = true;
+
+                actions.Add(new Action { ActionRaw = new ActionRaw { UnitCommand = command } });
+            }
+        }
+
+        public void AttackProxy(ResponseObservation observation, List<Action> actions) 
+        {
+
+            var zealots = observation.Observation.RawData.Units.Where(d => d.UnitType == UnitTypes.ZEALOT && d.Alliance == Alliance.Self);
+
+            foreach (var zealot in zealots)
+            {
+                if (zealot.Orders.Count() != 0) 
+                {
+                    continue;
+                }
+                var RandomMineral = observation.Observation.RawData.Units.Where(d => d.UnitType == UnitTypes.MINERAL_FIELD).FirstOrDefault();
+                var command = new ActionRawUnitCommand
+                {
+                    AbilityId = 23, //attack,
+                    TargetWorldSpacePos = new Point2D { X = RandomMineral.Pos.X, Y = RandomMineral.Pos.Y},
                 };
 
                 command.UnitTags.Add(zealot.Tag);
@@ -397,7 +304,7 @@ namespace SC2Sharp
         {
             var probes = observation.Observation.RawData.Units.Where(d => d.UnitType == UnitTypes.PROBE && d.Alliance == Alliance.Self).ToList();
 
-            if (probes.Count() > 16 && observation.Observation.PlayerCommon.Minerals >= 300)
+            if (probes.Count() > 16 && observation.Observation.PlayerCommon.FoodCap < observation.Observation.PlayerCommon.FoodUsed+8 && observation.Observation.PlayerCommon.Minerals >= 100)
             {
                 PylonCount++;
                 var command = new ActionRawUnitCommand
